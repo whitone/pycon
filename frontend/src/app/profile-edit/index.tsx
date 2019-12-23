@@ -18,7 +18,9 @@ import { useFormState } from "react-use-form-state";
 import { jsx } from "theme-ui";
 // @ts-ignore
 import * as yup from "yup";
+import DayPickerInput from "react-day-picker/DayPickerInput";
 
+import "react-day-picker/lib/style.css";
 import { InputWrapper } from "../../components/input-wrapper";
 import {
   MeUser,
@@ -208,6 +210,20 @@ export const EditProfileApp: React.SFC<RouteComponentProps<{
       ? updateProfileData.update.nonFieldErrors.join(" ")
       : updateProfileError;
 
+  const parseDate = (str: string, format: string, locale: string) => {
+    const timestamp = Date.parse(str);
+
+    if (!isNaN(timestamp)) {
+      const date = new Date(timestamp);
+      return date;
+    }
+    return undefined;
+  };
+
+  const formatDate = (date: Date, format: string, locale: string) => {
+    return date.toISOString().split("T")[0];
+  };
+
   return (
     <Box
       sx={{
@@ -314,28 +330,38 @@ export const EditProfileApp: React.SFC<RouteComponentProps<{
                 </FormattedMessage>
               }
             >
-              <Input
-                {...raw({
-                  name: "dateBirth",
-                  onChange: (event: React.ChangeEvent<HTMLInputElement>) => {
-                    const timestamp = Date.parse(event.target.value);
-
-                    if (!isNaN(timestamp)) {
-                      const date = new Date(timestamp);
-                      formState.setField("dateBirth", date);
-                      return date;
-                    }
-
-                    return formState.values.dateBirth;
-                  },
-                })}
-                value={
-                  formState.values.dateBirth &&
-                  formState.values.dateBirth.toISOString().split("T")[0]
-                }
-                type="date"
-                required={true}
+              {/*<Input*/}
+              <DayPickerInput
+                formatDate={formatDate}
+                parseDate={parseDate}
+                format="yyyy-MM-dd"
+                value={formState.values.dateBirth}
+                onDayChange={day => {
+                  console.log(day);
+                  formState.setField("dateBirth", day);
+                }}
               />
+              {/*  {...raw({*/}
+              {/*    name: "dateBirth",*/}
+              {/*    onChange: (event: React.ChangeEvent<HTMLInputElement>) => {*/}
+              {/*      const timestamp = Date.parse(event.target.value);*/}
+
+              {/*      if (!isNaN(timestamp)) {*/}
+              {/*        const date = new Date(timestamp);*/}
+              {/*        formState.setField("dateBirth", date);*/}
+              {/*        return date;*/}
+              {/*      }*/}
+
+              {/*      return formState.values.dateBirth;*/}
+              {/*    },*/}
+              {/*  })}*/}
+              {/*  value={*/}
+              {/*    formState.values.dateBirth &&*/}
+              {/*    formState.values.dateBirth.toISOString().split("T")[0]*/}
+              {/*  }*/}
+              {/*  type="date"*/}
+              {/*  required={true}*/}
+              {/*/>*/}
             </InputWrapper>
 
             <InputWrapper
