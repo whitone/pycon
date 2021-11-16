@@ -68,6 +68,7 @@ module "lambda" {
     SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = module.secrets.value.google_oauth2_secret
     PASTAPORTO_SECRET                = module.common_secrets.value.pastaporto_secret
     FORCE_PYCON_HOST                 = local.is_prod
+    SQS_QUEUE_URL                    = aws_sqs_queue.queue.id
   }
 }
 
