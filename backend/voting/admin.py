@@ -3,6 +3,7 @@ from django.contrib import admin
 from django.urls import reverse
 from django.utils.html import format_html
 
+from users.client import get_users_data_by_ids
 from voting.models import RankRequest, RankSubmission, Vote
 
 
@@ -86,13 +87,20 @@ class RankSubmissionAdmin(admin.ModelAdmin):
             "other": "🧑🏻‍🎤",
             "not_say": "⛔️",
         }
-        return emoji[obj.submission.speaker.gender]
+        speaker_gender = self._users_by_id[str(obj.speaker_id)]["gender"]
+        return emoji[speaker_gender]
 
     def view_submission(self, obj):  # pragma: no cover
         return format_html(
             '<a class="button" ' 'href="{{}}" target="_blank" >Open</a>&nbsp;',
             reverse("admin:submissions_submission_change", args=(obj.submission.id,)),
         )
+
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        speaker_ids = queryset.values_list("speaker_id", flat=True)
+        self._users_by_id = get_users_data_by_ids(list(speaker_ids))
+        return queryset
 
     view_submission.short_description = "View"
     view_submission.allow_tags = True
