@@ -4,6 +4,8 @@ from logging import getLogger
 import boto3
 from django.conf import settings
 
+from domain_events import events
+from domain_events.dispatcher import Dispatcher
 from domain_events.handler import HANDLERS
 
 logger = getLogger(__name__)
@@ -12,6 +14,12 @@ logger = getLogger(__name__)
 def process_sqs_messages(event):
     # Very basic SQS handling
     # Nothing is loaded so you can't use django in the handlers
+
+    # move in app configuration / setup / binding; use dependency injection eventually
+    dispatcher = Dispatcher()
+    for event in HANDLERS:
+        dispatcher.register(*event)
+
     for record in event["Records"]:
         if record["eventSource"] != "aws:sqs":
             logger.info(
@@ -20,29 +28,25 @@ def process_sqs_messages(event):
             )
             continue
 
-        process_message(record)
+        process_message(dispatcher, record)
 
 
-def process_message(record):
+def process_message(dispatcher: Dispatcher, record):
     message_id = record["messageId"]
     receipt_handle = record["receiptHandle"]
 
     message_attributes = record["messageAttributes"]
     message_type = message_attributes["MessageType"]["stringValue"]
 
-    handler = HANDLERS.get(message_type, None)
+    # Todo what if the event is not configured? handle error
+    event_cls = getattr(events, message_type)
 
-    if not handler:
-        logger.info(
-            "Received SQS message_id=%s message_type=%s but no handler accepts it",
-            message_id,
-            message_type,
-        )
-        return
-
+    data = json.loads(record["body"])
     try:
-        data = json.loads(record["body"])
-        handler(data)
+        event = event_cls(**data)
+        dispatcher.handle(event)
+    except TypeError:
+        logger.error(message_type, event_cls, data)
     except Exception as exc:
         # In future we should re-schedule the message with a delay if it fails
         # because of an exception, or see if SQS already supports this

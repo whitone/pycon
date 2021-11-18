@@ -1,45 +1,41 @@
+from domain_events import events
 from integrations import slack
 
 
-def handle_new_cfp_submission(data):
-    title = data["title"]
-    elevator_pitch = data["elevator_pitch"]
-    submission_type = data["submission_type"]
-    admin_url = data["admin_url"]
-    topic = data["topic"]
-    duration = data["duration"]
-
-    slack.send_message(
-        [
-            {
-                "type": "section",
-                "text": {
-                    "text": f"New _{submission_type}_ Submission",
-                    "type": "mrkdwn",
-                },
-            }
-        ],
-        [
-            {
-                "blocks": [
-                    {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": f"*<{admin_url}|{title.capitalize()}>*\n"
-                            f"*Elevator Pitch*\n{elevator_pitch}",
-                        },
-                        "fields": [
-                            {"type": "mrkdwn", "text": "*Topic*"},
-                            {"type": "mrkdwn", "text": "*Duration*"},
-                            {"type": "mrkdwn", "text": str(topic)},
-                            {"type": "plain_text", "text": str(duration)},
-                        ],
-                    }
-                ]
-            }
-        ],
-    )
+class SendSlackNotificaion:
+    def __call__(self, msg: events.submission_created):
+        slack.send_message(
+            [
+                {
+                    "type": "section",
+                    "text": {
+                        "text": f"New _{msg.submission_type}_ Submission",
+                        "type": "mrkdwn",
+                    },
+                }
+            ],
+            [
+                {
+                    "blocks": [
+                        {
+                            "type": "section",
+                            "text": {
+                                "type": "mrkdwn",
+                                "text": f"*<{msg.admin_url}|{msg.title.capitalize()}>*\n"
+                                f"*Elevator Pitch*\n{msg.elevator_pitch}",
+                            },
+                            "fields": [
+                                {"type": "mrkdwn", "text": "*Topic*"},
+                                {"type": "mrkdwn", "text": "*Duration*"},
+                                {"type": "mrkdwn", "text": str(msg.topic)},
+                                {"type": "plain_text", "text": str(msg.duration)},
+                            ],
+                        }
+                    ]
+                }
+            ],
+        )
 
 
-HANDLERS = {"NewCFPSubmission": handle_new_cfp_submission}
+# move in app configuration / setup / binding
+HANDLERS = [(events.submission_created, SendSlackNotificaion)]

@@ -20,24 +20,9 @@ def publish_message(type: str, body: dict, *, deduplication_id: str):
     )
 
 
-def notify_new_submission(
-    submission_id: int,
-    title: str,
-    elevator_pitch: str,
-    submission_type: str,
-    admin_url: str,
-    duration: int,
-    topic: str,
-):
+def raise_event(event_type, deduplication_id="", **kwargs):
     publish_message(
-        "NewCFPSubmission",
-        {
-            "title": title,
-            "elevator_pitch": elevator_pitch,
-            "submission_type": submission_type,
-            "admin_url": admin_url,
-            "topic": topic,
-            "duration": str(duration),
-        },
-        deduplication_id=str(submission_id),
+        event_type.__name__,
+        kwargs,
+        deduplication_id=str(deduplication_id),
     )
