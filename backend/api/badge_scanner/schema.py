@@ -71,14 +71,14 @@ class BadgeScannerMutation:
 
         data = pretix.get_order_position(conference, input.order_position_id)
 
-        user = get_user_by_email(data["attendee_email"])
+        scanned_user = get_user_by_email(data["attendee_email"])
 
-        if user is None:
-            return ScanError(message="User not found")
+        if scanned_user is None:
+            return ScanError(message="Unable to find user from email")
 
         scanned_badge, _ = models.BadgeScan.objects.get_or_create(
             scanned_by_id=info.context.request.user.id,
-            scanned_user_id=user["id"],
+            scanned_user_id=scanned_user["id"],
             badge_url=input.url,
             conference=conference,
             defaults={
