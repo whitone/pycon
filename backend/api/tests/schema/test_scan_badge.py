@@ -1,8 +1,10 @@
+from api.helpers.ids import encode_hashid
 from badge_scanner.models import BadgeScan
 
 import pytest
 
 pytestmark = pytest.mark.django_db
+
 
 def _scan_badge_mutation(graphql_client, variables):
     return graphql_client.query(
@@ -41,9 +43,11 @@ def test_raises_an_error_when_user_is_not_authenticated(graphql_client, conferen
 
 
 def test_works_when_user_is_logged_in(user, graphql_client, conference, mocker):
+    fake_id = encode_hashid(1)
+
     graphql_client.force_login(user)
 
-    mocker.patch(
+    get_order_position_mock = mocker.patch(
         "api.badge_scanner.schema.pretix.get_order_position",
         return_value={
             "attendee_name": "Test User",
@@ -63,7 +67,7 @@ def test_works_when_user_is_logged_in(user, graphql_client, conference, mocker):
     resp = _scan_badge_mutation(
         graphql_client,
         variables={
-            "url": "https://pycon.it/b/this-is-a-test",
+            "url": f"https://pycon.it/b/{fake_id}",
             "conferenceCode": conference.code,
         },
     )
@@ -74,13 +78,15 @@ def test_works_when_user_is_logged_in(user, graphql_client, conference, mocker):
     assert resp["data"]["scanBadge"]["attendee"]["email"] == "barko@marco.pizza"
     assert resp["data"]["scanBadge"]["notes"] == ""
 
+    get_order_position_mock.assert_called_once_with(conference, "1")
+
     badge_scan = BadgeScan.objects.get()
 
     assert badge_scan.scanned_by_id == user.id
     assert badge_scan.scanned_user_id == 1
     assert badge_scan.notes == ""
     assert badge_scan.conference == conference
-    assert badge_scan.badge_url == "https://pycon.it/b/this-is-a-test"
+    assert badge_scan.badge_url == f"https://pycon.it/b/{fake_id}"
 
 
 def test_fails_when_conference_is_wrong(user, graphql_client):
